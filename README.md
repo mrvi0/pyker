@@ -1,6 +1,11 @@
 # Pyker - Simple Python Process Manager
 
-A lightweight, user-friendly alternative to PM2 for managing Python scripts. Run Python processes in the background, monitor their status, and manage logs with ease.
+![Python](https://img.shields.io/badge/python-3.6+-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey.svg)
+![Dependencies](https://img.shields.io/badge/dependencies-minimal-brightgreen.svg)
+
+A lightweight, user-friendly tool for managing Python scripts. Run Python processes in the background, monitor their status, and manage logs with ease.
 
 ## ✨ Features
 
@@ -192,21 +197,14 @@ Pyker uses a configuration file at `~/.pyker/config.json` for advanced settings:
     └── ...
 ```
 
-## 🆚 Comparison with PM2
+## 🎯 Why Pyker?
 
-| Feature | PM2 | Pyker |
-|---------|-----|-------|
-| Language | Node.js | Python |
-| Installation | npm/global | pip/local |
-| User permissions | Often requires sudo | User space only |
-| Configuration | Complex | Simple JSON |
-| Memory usage | Higher | Lightweight |
-| Learning curve | Steep | Gentle |
-| Python integration | Limited | Native |
-| Log rotation | Built-in | Built-in |
-| Web UI | Available | CLI only |
-| Clustering | Yes | No |
-| Auto-restart | Yes | Yes |
+- **Python-first**: Built specifically for Python developers
+- **Zero configuration**: Works out of the box with sensible defaults
+- **User-friendly**: No complex setup or root permissions required
+- **Lightweight**: Minimal dependencies and resource usage
+- **Visual**: Beautiful tables and colored output that adapt to any terminal
+- **Portable**: Runs anywhere Python runs
 
 ## 🔍 Troubleshooting
 
@@ -260,9 +258,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Inspired by PM2 for Node.js
 - Built for Python developers who need simple process management
 - Thanks to the Python community for excellent libraries like `psutil`
+- Inspired by the need for lightweight process management tools
 
 ---
 
