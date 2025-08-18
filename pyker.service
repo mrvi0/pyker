@@ -1,0 +1,15 @@
+[Unit]
+Description=Pyker - Python Script Manager
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/pyker
+ExecStart=/opt/pyker/venv/bin/python /opt/pyker/main.py
+Restart=always
+RestartSec=10
+Environment=PYTHONPATH=/opt/pyker
+
+[Install]
+WantedBy=multi-user.target 

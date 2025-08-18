@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 
 from src.process_manager import ProcessManager
-from src.api import router as api_router
+from src.api import router as api_router, set_process_manager
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -21,11 +21,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Подключение API роутера
-app.include_router(api_router, prefix="/api")
-
 # Менеджер процессов
 process_manager = ProcessManager()
+
+# Устанавливаем менеджер в API
+set_process_manager(process_manager)
+
+# Подключение API роутера
+app.include_router(api_router, prefix="/api")
 
 # WebSocket соединения
 class ConnectionManager:
