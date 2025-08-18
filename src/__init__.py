@@ -1,1 +1,0 @@
-# Pyker - Python Script Manager 

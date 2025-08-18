@@ -1,189 +1,247 @@
-# Pyker - Python Script Manager
+# Pyker - Simple Python Process Manager
 
-Современный инструмент для удобного управления и запуска Python скриптов/ботов. **CLI-первый подход** с опциональным веб-интерфейсом.
+A lightweight, user-friendly alternative to PM2 for managing Python scripts. Run Python processes in the background, monitor their status, and manage logs with ease.
 
-## 🎯 Возможности
+## ✨ Features
 
-- 🚀 **Простой запуск** Python скриптов через CLI (основной способ)
-- 🛑 **Управление процессами** - запуск/остановка/перезапуск/удаление
-- 📊 **Прямой режим** - работает без веб-сервера
-- 📝 **Централизованное логирование** всех процессов
-- 🌐 **Опциональный веб-интерфейс** для визуального управления
-- 🔄 **Автоматический перезапуск** при сбоях
-- ⚙️ **Системный сервис** с автозапуском
-- 🔧 **CLI команды** для управления из терминала
+- 🚀 **Simple Setup** - No sudo required, works in user space
+- 📊 **Process Monitoring** - Real-time CPU and memory usage
+- 📝 **Automatic Logging** - Each process gets its own log file
+- 🔄 **Log Rotation** - Configurable log rotation to prevent disk space issues
+- 📱 **Adaptive Interface** - Responsive tables that work on any terminal size
+- 🎨 **Color-coded Status** - Visual status indicators with symbols
+- ⚡ **Fast Operations** - Start, stop, restart processes instantly
+- 📋 **Detailed Info** - Get comprehensive process information
 
-## 🏗️ Архитектура
+## 🔧 Installation
 
-- **Backend**: FastAPI + Python
-- **Frontend**: React + TypeScript
-- **Process Management**: asyncio + subprocess
-- **Real-time**: WebSocket
-- **UI**: Tailwind CSS + Headless UI
-- **CLI**: argparse + requests
-
-## 🚀 Быстрая установка
-
-### Автоматическая установка (рекомендуется)
+### Quick Installation (Recommended)
 
 ```bash
-# Клонирование репозитория
-git clone <repository-url>
-cd pyker
-
-# Установка как системная утилита
-sudo python3 install.py
+# Download and install
+wget https://raw.githubusercontent.com/username/pyker/main/install_simple.py
+sudo python3 install_simple.py
 ```
 
-### Ручная установка
+### Manual Installation
 
 ```bash
-# Клонирование репозитория
-git clone <repository-url>
+# Clone repository
+git clone https://github.com/username/pyker.git
 cd pyker
 
-# Создание виртуального окружения
-python3 -m venv venv
-source venv/bin/activate
+# Install dependencies
+pip3 install psutil
 
-# Установка зависимостей
-pip install -r requirements.txt
-
-# Сборка фронтенда
-cd frontend
-npm install
-npm run build
-cd ..
-
-# Запуск
-python main.py
+# Make executable and install globally
+sudo cp pyker.py /usr/local/bin/pyker
+sudo chmod +x /usr/local/bin/pyker
 ```
 
-## 📋 Использование
-
-### CLI команды (основной способ)
+## 🚀 Quick Start
 
 ```bash
-# Запуск процесса (прямой режим - без сервера)
+# Start a Python script
 pyker start mybot /path/to/script.py
-pyker start mybot script.py --auto-restart
 
-# Управление процессами
-pyker list                    # Список процессов
-pyker logs <process_id>       # Показать логи
-pyker stop <process_id>       # Остановить процесс
-pyker restart <process_id>    # Перезапустить процесс
-pyker delete <process_id>     # Удалить процесс
+# List all processes
+pyker list
 
-# Статус
-pyker status                  # Статус процессов
+# View process logs
+pyker logs mybot
 
-# Запуск веб-сервера (опционально)
-pyker-web                     # Запустить веб-интерфейс
-pyker-web --port 9000         # На другом порту
+# Get detailed process info
+pyker info mybot
+
+# Stop a process
+pyker stop mybot
+
+# Restart a process
+pyker restart mybot
+
+# Delete a process
+pyker delete mybot
 ```
 
-### Веб-интерфейс (опционально)
+## 📋 Commands
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `start <name> <script>` | Start a new process | `pyker start bot script.py` |
+| `stop <name>` | Stop a running process | `pyker stop bot` |
+| `restart <name>` | Restart a process | `pyker restart bot` |
+| `delete <name>` | Remove process from list | `pyker delete bot` |
+| `list` | Show all processes in table | `pyker list` |
+| `logs <name>` | Show process logs | `pyker logs bot -f` |
+| `info [name]` | Show detailed information | `pyker info bot` |
+
+### Command Options
+
+- `start --auto-restart` - Enable automatic restart on failure
+- `logs -f` - Follow logs in real-time
+- `logs -n 100` - Show last 100 lines
+
+## 📊 Process Status Display
+
+### Full Table (Wide Terminals)
+```
+Process List:
+┌───────────┬────────┬─────┬───────┬───────────────────┬───────────────────┬──────────────────┐
+│Name       │PID     │CPU% │RAM    │Started            │Stopped            │Script            │
+├───────────┼────────┼─────┼───────┼───────────────────┼───────────────────┼──────────────────┤
+│✓ webserver│123456  │2.1  │45.2   │2025-08-19 09:30:15│-                  │server.py         │
+│✗ worker   │-       │0.0  │0.0    │2025-08-19 09:25:10│2025-08-19 10:15:30│worker.py         │
+└───────────┴────────┴─────┴───────┴───────────────────┴───────────────────┴──────────────────┘
+
+Statistics: Total: 2 | Running: 1 | Stopped: 1
+```
+
+### Compact Table (Narrow Terminals)
+```
+Process List:
+┌──────────────────┬──────────┬───────────────┐
+│Name              │PID       │Script         │
+├──────────────────┼──────────┼───────────────┤
+│✓ webserver       │123456    │server.py      │
+│✗ worker          │-         │worker.py      │
+└──────────────────┴──────────┴───────────────┘
+
+Total: 2 | Running: 1 | Stopped: 1
+```
+
+### Status Symbols
+- ✓ (Green) - Process is running
+- ✗ (Red) - Process is stopped
+- ⚠ (Yellow) - Process error
+
+## 📝 Detailed Process Information
 
 ```bash
-# Запуск веб-сервера
-pyker-web
-
-# Откройте http://localhost:8000
-# Загрузите Python скрипт через drag & drop
-# Запустите процесс с нужными параметрами
-# Следите за логами в реальном времени
+pyker info mybot
 ```
 
-### API документация
+Output:
+```
+Process Information: mybot
+Status: ✓ Running
+PID: 123456
+Script: /home/user/scripts/bot.py
+CPU Usage: 2.1%
+Memory: 45.2 MB
+Started: 2025-08-19 09:30:15
+Log file: /home/user/.pyker/logs/mybot.log
+Auto restart: No
+```
 
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+## ⚙️ Configuration
 
-## ⚙️ Управление сервисом
+Pyker uses a configuration file at `~/.pyker/config.json` for advanced settings:
 
+```json
+{
+  "log_rotation": {
+    "enabled": true,
+    "max_size_mb": 10,
+    "max_files": 5
+  },
+  "process_check_interval": 5,
+  "auto_cleanup_stopped": false
+}
+```
+
+### Configuration Options
+
+- `log_rotation.enabled` - Enable/disable automatic log rotation
+- `log_rotation.max_size_mb` - Maximum log file size before rotation (MB)
+- `log_rotation.max_files` - Number of rotated log files to keep
+- `process_check_interval` - Process status check interval (seconds)
+- `auto_cleanup_stopped` - Automatically remove stopped processes
+
+## 📁 File Structure
+
+```
+~/.pyker/
+├── processes.json      # Process state information
+├── config.json         # Configuration settings
+└── logs/               # Process log files
+    ├── mybot.log       # Current log
+    ├── mybot.log.1     # Rotated log (newest)
+    ├── mybot.log.2     # Rotated log
+    └── ...
+```
+
+## 🆚 Comparison with PM2
+
+| Feature | PM2 | Pyker |
+|---------|-----|-------|
+| Language | Node.js | Python |
+| Installation | npm/global | pip/local |
+| User permissions | Often requires sudo | User space only |
+| Configuration | Complex | Simple JSON |
+| Memory usage | Higher | Lightweight |
+| Learning curve | Steep | Gentle |
+| Python integration | Limited | Native |
+| Log rotation | Built-in | Built-in |
+| Web UI | Available | CLI only |
+| Clustering | Yes | No |
+| Auto-restart | Yes | Yes |
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+**Q: Command not found after installation**
 ```bash
-# Запуск сервиса
-sudo systemctl start pyker
+# Check if /usr/local/bin is in your PATH
+echo $PATH
 
-# Остановка сервиса
-sudo systemctl stop pyker
-
-# Статус сервиса
-sudo systemctl status pyker
-
-# Включение автозапуска
-sudo systemctl enable pyker
-
-# Просмотр логов
-sudo journalctl -u pyker -f
+# Or run directly
+/usr/local/bin/pyker list
 ```
 
-## 🗑️ Удаление
-
+**Q: Permission denied**
 ```bash
-sudo python3 uninstall.py
+# Make sure the file is executable
+sudo chmod +x /usr/local/bin/pyker
 ```
 
-## 📁 Структура проекта
-
-```
-pyker/
-├── main.py              # Основной файл приложения
-├── pyker_cli.py         # CLI интерфейс (основной)
-├── pyker_web.py         # Веб-сервер (опциональный)
-├── install.py           # Скрипт установки
-├── uninstall.py         # Скрипт удаления
-├── pyker.service        # Systemd сервис
-├── requirements.txt     # Python зависимости
-├── src/                 # Backend код
-│   ├── api.py          # API роуты
-│   └── process_manager.py # Управление процессами
-├── frontend/           # React приложение
-│   ├── src/
-│   │   ├── components/ # React компоненты
-│   │   ├── types.ts    # TypeScript типы
-│   │   └── App.tsx     # Главный компонент
-│   └── package.json    # Frontend зависимости
-└── scripts/            # Примеры Python скриптов
-```
-
-## 🔧 Конфигурация
-
-После установки Pyker будет доступен:
-- **CLI команда**: `pyker` (основной способ)
-- **Веб-сервер**: `pyker-web` (опционально)
-- **Веб-интерфейс**: `http://localhost:8000` (при запуске pyker-web)
-- **API**: `http://localhost:8000/api` (при запуске pyker-web)
-- **Файлы**: `/opt/pyker/`
-- **Логи**: `/var/log/pyker/`
-
-## 📝 Примеры
-
-### Простой бот
-```python
-#!/usr/bin/env python3
-import time
-from datetime import datetime
-
-while True:
-    print(f"[{datetime.now()}] Бот работает...")
-    time.sleep(5)
-```
-
-### Запуск через CLI
+**Q: Process shows as stopped but still running**
 ```bash
-pyker start mybot /path/to/bot.py --auto-restart
-pyker logs mybot_1234567890
+# Update process status
+pyker list
+
+# Force kill if needed
+kill -9 <PID>
+pyker delete <name>
 ```
 
-## 🤝 Вклад в проект
+**Q: Logs are too large**
+```bash
+# Enable log rotation in config
+nano ~/.pyker/config.json
 
-1. Fork репозитория
-2. Создайте feature branch
-3. Внесите изменения
-4. Создайте Pull Request
+# Or manually clean
+rm ~/.pyker/logs/*.log.*
+```
 
-## 📄 Лицензия
+## 🤝 Contributing
 
-MIT License 
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Inspired by PM2 for Node.js
+- Built for Python developers who need simple process management
+- Thanks to the Python community for excellent libraries like `psutil`
+
+---
+
+**Made with ❤️ for Python developers** 
