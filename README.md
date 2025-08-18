@@ -19,26 +19,26 @@ A lightweight, user-friendly alternative to PM2 for managing Python scripts. Run
 
 ```bash
 # Download and run install script
-curl -sSL https://raw.githubusercontent.com/username/pyker/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/mrvi0/pyker/main/install.sh | bash
 ```
 
 Or with wget:
 ```bash
-wget -qO- https://raw.githubusercontent.com/username/pyker/main/install.sh | bash
+wget -qO- https://raw.githubusercontent.com/mrvi0/pyker/main/install.sh | bash
 ```
 
 ### Python Installer
 
 ```bash
 # Download and run Python installer
-curl -sSL https://raw.githubusercontent.com/username/pyker/main/install.py | python3
+curl -sSL https://raw.githubusercontent.com/mrvi0/pyker/main/install.py | python3
 ```
 
 ### Manual Installation
 
 ```bash
 # Clone repository
-git clone https://github.com/username/pyker.git
+git clone https://github.com/mrvi0/pyker.git
 cd pyker
 
 # Run installer (no sudo required!)
