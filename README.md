@@ -15,12 +15,23 @@ A lightweight, user-friendly alternative to PM2 for managing Python scripts. Run
 
 ## 🔧 Installation
 
-### Quick Installation (Recommended)
+### One-Line Installation (Recommended)
 
 ```bash
-# Download and install
-wget https://raw.githubusercontent.com/username/pyker/main/install_simple.py
-sudo python3 install_simple.py
+# Download and run install script
+curl -sSL https://raw.githubusercontent.com/username/pyker/main/install.sh | bash
+```
+
+Or with wget:
+```bash
+wget -qO- https://raw.githubusercontent.com/username/pyker/main/install.sh | bash
+```
+
+### Python Installer
+
+```bash
+# Download and run Python installer
+curl -sSL https://raw.githubusercontent.com/username/pyker/main/install.py | python3
 ```
 
 ### Manual Installation
@@ -30,12 +41,23 @@ sudo python3 install_simple.py
 git clone https://github.com/username/pyker.git
 cd pyker
 
-# Install dependencies
-pip3 install psutil
+# Run installer (no sudo required!)
+python3 install.py
+```
 
-# Make executable and install globally
-sudo cp pyker.py /usr/local/bin/pyker
-sudo chmod +x /usr/local/bin/pyker
+### From Source
+
+```bash
+# Install psutil dependency
+pip3 install --user psutil
+
+# Copy pyker to local bin
+mkdir -p ~/.local/bin
+cp pyker.py ~/.local/bin/pyker
+chmod +x ~/.local/bin/pyker
+
+# Add to PATH (add this line to ~/.bashrc)
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
 ## 🚀 Quick Start
