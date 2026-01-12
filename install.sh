@@ -82,9 +82,9 @@ fi
 if [ ! -f "pyker.py" ]; then
     echo -e "${YELLOW}Downloading pyker.py...${NC}"
     if command -v curl &> /dev/null; then
-        curl -sSL https://raw.githubusercontent.com/username/pyker/main/pyker.py -o pyker.py
+        curl -sSL https://raw.githubusercontent.com/mrvi0/pyker/main/pyker.py -o pyker.py
     elif command -v wget &> /dev/null; then
-        wget -q https://raw.githubusercontent.com/username/pyker/main/pyker.py
+        wget -q https://raw.githubusercontent.com/mrvi0/pyker/main/pyker.py
     else
         echo -e "${RED}Error: Neither curl nor wget is available${NC}"
         echo -e "${YELLOW}Please download pyker.py manually and run this script again${NC}"
