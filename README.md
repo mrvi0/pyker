@@ -1,6 +1,6 @@
 # Pyker - Simple Python Process Manager
 
-![Python](https://img.shields.io/badge/python-3.6+-blue.svg)
+![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey.svg)
 ![Dependencies](https://img.shields.io/badge/dependencies-minimal-brightgreen.svg)
@@ -21,7 +21,27 @@ A lightweight, user-friendly tool for managing Python scripts. Run Python proces
 
 ## 🔧 Installation
 
-### One-Line Installation (Recommended)
+### With uv / uvx (Recommended)
+
+Install as a persistent user tool ([uv](https://docs.astral.sh/uv/) required):
+
+```bash
+uv tool install git+https://github.com/mrvi0/pyker.git
+```
+
+Run once without installing:
+
+```bash
+uvx --from git+https://github.com/mrvi0/pyker.git pyker list
+```
+
+Uninstall:
+
+```bash
+uv tool uninstall pyker
+```
+
+### One-Line Installation
 
 ```bash
 # Download and run install script

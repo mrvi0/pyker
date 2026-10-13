@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyker"
+version = "1.0.0"
+description = "Simple Python Process Manager — a lightweight PM2-style tool for Python scripts"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.8"
+authors = [
+    { name = "mrvi0" },
+]
+keywords = ["process-manager", "python", "cli", "pm2", "scripts"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: System :: Systems Administration",
+]
+dependencies = [
+    "psutil>=5.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/mrvi0/pyker"
+Repository = "https://github.com/mrvi0/pyker"
+Issues = "https://github.com/mrvi0/pyker/issues"
+
+[project.scripts]
+pyker = "pyker:main"
+
+[tool.setuptools]
+py-modules = ["pyker"]
