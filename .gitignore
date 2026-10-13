@@ -20,6 +20,11 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
 
 # Virtual environments
 venv/
@@ -38,9 +43,12 @@ ENV/
 logs/
 *.log
 
-# Data
+# Data / demos
 data/
+scripts/data/
 *.json
+!pyproject.toml
+!**/completions/**
 
 # Frontend
 frontend/node_modules/

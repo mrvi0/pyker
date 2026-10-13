@@ -1,43 +1,34 @@
 #!/usr/bin/env python3
-"""
-Пример простого бота для демонстрации работы Pyker
-"""
+"""Demo bot for trying Pyker locally."""
 
+import os
+import sys
 import time
 import random
-import sys
 from datetime import datetime
 
-def main():
-    print(f"[{datetime.now()}] Бот запущен!")
-    print(f"[{datetime.now()}] PID: {os.getpid()}")
-    
+
+def main() -> None:
+    print(f"[{datetime.now()}] Bot started (PID: {os.getpid()})")
     counter = 0
     while True:
         try:
             counter += 1
-            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            
-            # Имитируем работу бота
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             if counter % 10 == 0:
-                print(f"[{current_time}] Выполнено {counter} итераций")
-            
-            # Случайная ошибка для демонстрации
-            if random.random() < 0.001:  # 0.1% шанс ошибки
-                print(f"[{current_time}] Произошла случайная ошибка!")
-                raise Exception("Случайная ошибка для демонстрации")
-            
+                print(f"[{now}] Completed {counter} iterations")
+            if random.random() < 0.001:
+                raise RuntimeError("demo random error")
             time.sleep(1)
-            
         except KeyboardInterrupt:
-            print(f"[{current_time}] Получен сигнал остановки")
+            print(f"[{datetime.now()}] Stopped by signal")
             break
-        except Exception as e:
-            print(f"[{current_time}] Ошибка: {e}")
-            time.sleep(5)  # Пауза перед продолжением
-    
-    print(f"[{datetime.now()}] Бот завершен!")
+        except Exception as exc:
+            print(f"[{datetime.now()}] Error: {exc}")
+            time.sleep(5)
+    print(f"[{datetime.now()}] Bot finished")
+
 
 if __name__ == "__main__":
-    import os
-    main() 
+    main()
+    sys.exit(0)
