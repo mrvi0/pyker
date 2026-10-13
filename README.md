@@ -156,14 +156,51 @@ pyker start analyzer data.py --venv /home/user/miniconda3/envs/myenv
 | `list` | Show all processes in table | `pyker list` |
 | `logs <name>` | Show process logs | `pyker logs bot -f` |
 | `info [name]` | Show detailed information | `pyker info bot` |
+| `enable <name>` | Mark process to start on boot | `pyker enable bot` |
+| `disable <name>` | Disable boot start for process | `pyker disable bot` |
+| `startup` | Install OS boot/login hook | `pyker startup` |
+| `unstartup` | Remove OS boot/login hook | `pyker unstartup` |
+| `resurrect` | Start all on-boot processes | `pyker resurrect` |
 | `uninstall` | Uninstall Pyker completely | `pyker uninstall` |
 
 ### Command Options
 
 - `start --auto-restart` - Enable automatic restart on failure
 - `start --venv PATH` - Use virtual environment (e.g., `./venv`, `/path/to/venv`)
+- `start --on-boot` - Mark process to start automatically on boot/login
 - `logs -f` - Follow logs in real-time
 - `logs -n 100` - Show last 100 lines
+
+## 🔁 Start on Boot
+
+Pyker can resurrect selected processes when you log in (or at boot):
+
+```bash
+# 1. Mark processes for boot (either way works)
+pyker start mybot bot.py --on-boot
+# or
+pyker enable mybot
+
+# 2. Install the OS hook once
+pyker startup
+
+# 3. After reboot/login, marked processes start automatically
+# You can also trigger manually:
+pyker resurrect
+```
+
+**Platforms:**
+- **Linux** — systemd user service (`~/.config/systemd/user/pyker-resurrect.service`)
+- **macOS** — LaunchAgent (`~/Library/LaunchAgents/com.pyker.resurrect.plist`)
+- **Windows** — Startup folder script
+
+On Linux, user services normally start at login. To start at boot without an interactive login:
+
+```bash
+loginctl enable-linger $USER
+```
+
+Remove the hook with `pyker unstartup` (also removed automatically by `pyker uninstall`).
 
 ## 📊 Process Status Display
 

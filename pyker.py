@@ -7,8 +7,10 @@ A lightweight alternative to PM2 for Python scripts
 import os
 import sys
 import json
+import shutil
 import psutil
 import argparse
+import platform
 import subprocess
 from pathlib import Path
 from datetime import datetime
@@ -147,7 +149,7 @@ class Pyker:
         # Create new empty log file
         log_file.touch()
     
-    def start(self, name: str, script_path: str, auto_restart: bool = False, venv_path: str = None):
+    def start(self, name: str, script_path: str, auto_restart: bool = False, venv_path: str = None, on_boot: bool = False):
         """Start a process"""
         script_path = os.path.abspath(script_path)
         
@@ -165,6 +167,9 @@ class Pyker:
             if self.processes[name]['status'] == 'running':
                 print(f"{self.YELLOW}[WARNING]{self.RESET} Process '{name}' is already running")
                 return False
+            # Preserve on_boot unless explicitly enabled this call
+            if not on_boot:
+                on_boot = self.processes[name].get('on_boot', False)
         
         # Create log file
         log_file = self.logs_dir / f"{name}.log"
@@ -199,6 +204,7 @@ class Pyker:
                 'start_time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 'log_file': str(log_file),
                 'auto_restart': auto_restart,
+                'on_boot': on_boot,
                 'cpu_percent': 0.0,
                 'memory_mb': 0.0
             }
@@ -206,6 +212,11 @@ class Pyker:
             self._save_state()
             print(f"{self.GREEN}[SUCCESS]{self.RESET} Process '{name}' started (PID: {process.pid})")
             print(f"{self.BLUE}[INFO]{self.RESET} Logs: {log_file}")
+            if on_boot and not self._startup_is_installed():
+                print(
+                    f"{self.BLUE}[INFO]{self.RESET} Marked for boot — "
+                    f"run '{self.CYAN}pyker startup{self.RESET}' to install the OS hook"
+                )
             return True
             
         except Exception as e:
@@ -274,7 +285,8 @@ class Pyker:
             name,
             process_info['script_path'],
             process_info.get('auto_restart', False),
-            process_info.get('venv_path')
+            process_info.get('venv_path'),
+            process_info.get('on_boot', False),
         )
     
     def delete(self, name: str):
@@ -589,6 +601,9 @@ class Pyker:
             auto_restart = info.get('auto_restart', False)
             print(f"{self.BOLD}Auto restart:{self.RESET} {'Yes' if auto_restart else 'No'}")
             
+            on_boot = info.get('on_boot', False)
+            print(f"{self.BOLD}On boot:{self.RESET} {'Yes' if on_boot else 'No'}")
+            
             venv_path = info.get('venv_path')
             if venv_path:
                 print(f"{self.BOLD}Virtual env:{self.RESET} {venv_path}")
@@ -612,12 +627,312 @@ class Pyker:
             print(f"{self.BOLD}State file:{self.RESET} {self.state_file}")
             print(f"{self.BOLD}Logs directory:{self.RESET} {self.logs_dir}")
             print(f"{self.BOLD}Config file:{self.RESET} {self.state_file.parent / 'config.json'}")
+            on_boot_count = sum(1 for p in self.processes.values() if p.get('on_boot'))
+            print(f"{self.BOLD}On boot:{self.RESET} {on_boot_count} process(es)")
+            print(f"{self.BOLD}Startup hook:{self.RESET} {'enabled' if self._startup_is_installed() else 'not installed'}")
+    
+    def enable(self, name: str):
+        """Mark a process to start automatically on boot/login"""
+        if name not in self.processes:
+            print(f"{self.RED}[ERROR]{self.RESET} Process '{name}' not found")
+            return False
+        
+        self.processes[name]['on_boot'] = True
+        self._save_state()
+        print(f"{self.GREEN}[SUCCESS]{self.RESET} Process '{name}' will start on boot")
+        if not self._startup_is_installed():
+            print(f"{self.YELLOW}[HINT]{self.RESET} Run '{self.CYAN}pyker startup{self.RESET}' to install the boot hook")
+        return True
+    
+    def disable(self, name: str):
+        """Remove a process from automatic boot start"""
+        if name not in self.processes:
+            print(f"{self.RED}[ERROR]{self.RESET} Process '{name}' not found")
+            return False
+        
+        self.processes[name]['on_boot'] = False
+        self._save_state()
+        print(f"{self.GREEN}[SUCCESS]{self.RESET} Process '{name}' will no longer start on boot")
+        return True
+    
+    def resurrect(self):
+        """Start all processes marked with on_boot that are not running"""
+        boot_processes = [
+            name for name, info in self.processes.items() if info.get('on_boot')
+        ]
+        
+        if not boot_processes:
+            print(f"{self.YELLOW}[INFO]{self.RESET} No processes marked for boot start")
+            print(f"{self.BLUE}[HINT]{self.RESET} Use '{self.CYAN}pyker enable <name>{self.RESET}' or '{self.CYAN}pyker start ... --on-boot{self.RESET}'")
+            return True
+        
+        print(f"{self.BLUE}[INFO]{self.RESET} Resurrecting {len(boot_processes)} process(es)...")
+        started = 0
+        skipped = 0
+        failed = 0
+        
+        for name in boot_processes:
+            self._update_process_status(name)
+            info = self.processes[name]
+            if info.get('status') == 'running':
+                print(f"{self.YELLOW}[SKIP]{self.RESET} '{name}' is already running")
+                skipped += 1
+                continue
+            
+            ok = self.start(
+                name,
+                info['script_path'],
+                info.get('auto_restart', False),
+                info.get('venv_path'),
+                True,
+            )
+            if ok:
+                started += 1
+            else:
+                failed += 1
+        
+        print(
+            f"{self.GREEN}[DONE]{self.RESET} started={started}, "
+            f"skipped={skipped}, failed={failed}"
+        )
+        return failed == 0
+    
+    def startup(self):
+        """Install OS hook to run pyker resurrect on login/boot"""
+        system = platform.system()
+        if system == 'Linux':
+            return self._startup_linux()
+        if system == 'Darwin':
+            return self._startup_macos()
+        if system == 'Windows':
+            return self._startup_windows()
+        
+        print(f"{self.RED}[ERROR]{self.RESET} Unsupported platform: {system}")
+        return False
+    
+    def unstartup(self):
+        """Remove OS boot/login hook"""
+        system = platform.system()
+        if system == 'Linux':
+            return self._unstartup_linux()
+        if system == 'Darwin':
+            return self._unstartup_macos()
+        if system == 'Windows':
+            return self._unstartup_windows()
+        
+        print(f"{self.RED}[ERROR]{self.RESET} Unsupported platform: {system}")
+        return False
+    
+    def _find_pyker_executable(self):
+        """Resolve absolute path to the pyker CLI"""
+        candidates = []
+        
+        which = shutil.which('pyker')
+        if which:
+            candidates.append(Path(which).resolve())
+        
+        argv0 = Path(sys.argv[0]).expanduser()
+        if not argv0.is_absolute():
+            argv0 = Path.cwd() / argv0
+        if argv0.exists():
+            candidates.append(argv0.resolve())
+        
+        home_bin = Path.home() / '.local' / 'bin' / 'pyker'
+        if home_bin.exists():
+            candidates.append(home_bin.resolve())
+        
+        for path in candidates:
+            if path.exists() and os.access(path, os.X_OK):
+                return str(path)
+        
+        # Fall back to running this module via current Python
+        module_path = Path(__file__).resolve()
+        if module_path.exists():
+            return f"{sys.executable} {module_path}"
+        
+        return None
+    
+    def _startup_unit_paths(self):
+        """Return platform-specific startup artifact paths"""
+        home = Path.home()
+        return {
+            'systemd_unit': home / '.config' / 'systemd' / 'user' / 'pyker-resurrect.service',
+            'launch_agent': home / 'Library' / 'LaunchAgents' / 'com.pyker.resurrect.plist',
+            'windows_cmd': home / 'AppData' / 'Roaming' / 'Microsoft' / 'Windows' / 'Start Menu' /
+                           'Programs' / 'Startup' / 'pyker-resurrect.cmd',
+        }
+    
+    def _startup_is_installed(self):
+        """Check whether a startup hook is present"""
+        paths = self._startup_unit_paths()
+        system = platform.system()
+        if system == 'Linux':
+            return paths['systemd_unit'].exists()
+        if system == 'Darwin':
+            return paths['launch_agent'].exists()
+        if system == 'Windows':
+            return paths['windows_cmd'].exists()
+        return False
+    
+    def _startup_linux(self):
+        """Install systemd --user oneshot for resurrect"""
+        if not shutil.which('systemctl'):
+            print(f"{self.RED}[ERROR]{self.RESET} systemctl not found; cannot install startup hook")
+            return False
+        
+        pyker_exe = self._find_pyker_executable()
+        if not pyker_exe:
+            print(f"{self.RED}[ERROR]{self.RESET} Could not locate pyker executable")
+            return False
+        
+        unit_path = self._startup_unit_paths()['systemd_unit']
+        unit_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Supports binary path or "python /path/pyker.py"
+        unit_content = f"""[Unit]
+Description=Pyker resurrect processes on login/boot
+After=default.target
+
+[Service]
+Type=oneshot
+ExecStart={pyker_exe} resurrect
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target
+"""
+        unit_path.write_text(unit_content, encoding='utf-8')
+        
+        try:
+            subprocess.run(['systemctl', '--user', 'daemon-reload'], check=True, capture_output=True)
+            subprocess.run(['systemctl', '--user', 'enable', 'pyker-resurrect.service'], check=True, capture_output=True)
+        except subprocess.CalledProcessError as e:
+            err = (e.stderr or b'').decode().strip() or str(e)
+            print(f"{self.RED}[ERROR]{self.RESET} Failed to enable systemd unit: {err}")
+            return False
+        
+        print(f"{self.GREEN}[SUCCESS]{self.RESET} Installed startup hook: {unit_path}")
+        print(f"{self.BLUE}[INFO]{self.RESET} Processes with on_boot will start on login")
+        print(
+            f"{self.YELLOW}[HINT]{self.RESET} For start at boot without login, run: "
+            f"{self.CYAN}loginctl enable-linger $USER{self.RESET}"
+        )
+        
+        boot_count = sum(1 for p in self.processes.values() if p.get('on_boot'))
+        if boot_count == 0:
+            print(
+                f"{self.YELLOW}[HINT]{self.RESET} No processes marked yet — "
+                f"use '{self.CYAN}pyker enable <name>{self.RESET}' or '{self.CYAN}--on-boot{self.RESET}'"
+            )
+        return True
+    
+    def _unstartup_linux(self):
+        """Remove systemd --user startup hook"""
+        unit_path = self._startup_unit_paths()['systemd_unit']
+        if shutil.which('systemctl'):
+            subprocess.run(
+                ['systemctl', '--user', 'disable', '--now', 'pyker-resurrect.service'],
+                capture_output=True,
+            )
+            subprocess.run(['systemctl', '--user', 'daemon-reload'], capture_output=True)
+        
+        if unit_path.exists():
+            unit_path.unlink()
+            print(f"{self.GREEN}[SUCCESS]{self.RESET} Removed startup hook: {unit_path}")
+        else:
+            print(f"{self.YELLOW}[INFO]{self.RESET} Startup hook was not installed")
+        return True
+    
+    def _startup_macos(self):
+        """Install LaunchAgent to run resurrect at login"""
+        pyker_exe = self._find_pyker_executable()
+        if not pyker_exe:
+            print(f"{self.RED}[ERROR]{self.RESET} Could not locate pyker executable")
+            return False
+        
+        plist_path = self._startup_unit_paths()['launch_agent']
+        plist_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        if ' ' in pyker_exe:
+            parts = pyker_exe.split()
+            program_args = ''.join(f'    <string>{p}</string>\n' for p in parts)
+            program_args += '    <string>resurrect</string>\n'
+        else:
+            program_args = f'    <string>{pyker_exe}</string>\n    <string>resurrect</string>\n'
+        
+        plist = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.pyker.resurrect</string>
+  <key>ProgramArguments</key>
+  <array>
+{program_args}  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>{Path.home() / '.pyker' / 'logs' / 'startup.log'}</string>
+  <key>StandardErrorPath</key>
+  <string>{Path.home() / '.pyker' / 'logs' / 'startup.log'}</string>
+</dict>
+</plist>
+"""
+        plist_path.write_text(plist, encoding='utf-8')
+        
+        # Load agent (ignore errors if already loaded)
+        subprocess.run(['launchctl', 'unload', str(plist_path)], capture_output=True)
+        result = subprocess.run(['launchctl', 'load', str(plist_path)], capture_output=True)
+        if result.returncode != 0:
+            err = (result.stderr or b'').decode().strip()
+            print(f"{self.YELLOW}[WARNING]{self.RESET} launchctl load: {err or 'non-zero exit'}")
+        
+        print(f"{self.GREEN}[SUCCESS]{self.RESET} Installed startup hook: {plist_path}")
+        print(f"{self.BLUE}[INFO]{self.RESET} Processes with on_boot will start at login")
+        return True
+    
+    def _unstartup_macos(self):
+        """Remove LaunchAgent startup hook"""
+        plist_path = self._startup_unit_paths()['launch_agent']
+        if plist_path.exists():
+            subprocess.run(['launchctl', 'unload', str(plist_path)], capture_output=True)
+            plist_path.unlink()
+            print(f"{self.GREEN}[SUCCESS]{self.RESET} Removed startup hook: {plist_path}")
+        else:
+            print(f"{self.YELLOW}[INFO]{self.RESET} Startup hook was not installed")
+        return True
+    
+    def _startup_windows(self):
+        """Install a Startup folder .cmd that runs resurrect on login"""
+        pyker_exe = self._find_pyker_executable()
+        if not pyker_exe:
+            print(f"{self.RED}[ERROR]{self.RESET} Could not locate pyker executable")
+            return False
+        
+        cmd_path = self._startup_unit_paths()['windows_cmd']
+        cmd_path.parent.mkdir(parents=True, exist_ok=True)
+        cmd_path.write_text(f'@echo off\r\n{pyker_exe} resurrect\r\n', encoding='utf-8')
+        
+        print(f"{self.GREEN}[SUCCESS]{self.RESET} Installed startup hook: {cmd_path}")
+        print(f"{self.BLUE}[INFO]{self.RESET} Processes with on_boot will start at Windows login")
+        return True
+    
+    def _unstartup_windows(self):
+        """Remove Windows Startup folder hook"""
+        cmd_path = self._startup_unit_paths()['windows_cmd']
+        if cmd_path.exists():
+            cmd_path.unlink()
+            print(f"{self.GREEN}[SUCCESS]{self.RESET} Removed startup hook: {cmd_path}")
+        else:
+            print(f"{self.YELLOW}[INFO]{self.RESET} Startup hook was not installed")
+        return True
     
     def uninstall(self):
         """Uninstall Pyker with confirmation"""
         print(f"\n{self.BOLD}{self.RED}⚠ Pyker Uninstallation{self.RESET}")
         print(f"{self.YELLOW}This will:{self.RESET}")
         print(f"  • Stop all running processes")
+        print(f"  • Remove boot startup hook (if installed)")
         print(f"  • Remove Pyker executable")
         print(f"  • Remove completion scripts")
         print(f"  • Keep logs and config (optional cleanup)")
@@ -653,6 +968,11 @@ class Pyker:
         if stopped_count > 0:
             print(f"{self.GREEN}✓ Stopped {stopped_count} processes{self.RESET}")
         
+        # Remove boot hook if present
+        if self._startup_is_installed():
+            print(f"{self.YELLOW}Removing startup hook...{self.RESET}")
+            self.unstartup()
+        
         # Ask about data cleanup
         print(f"\n{self.BOLD}Remove logs and configuration? [y/N]:{self.RESET} ", end="")
         try:
@@ -668,8 +988,6 @@ class Pyker:
     
     def _remove_pyker_files(self, remove_data: bool):
         """Remove Pyker installation files"""
-        import shutil
-        
         # Find pyker executable
         pyker_locations = [
             Path.home() / ".local" / "bin" / "pyker",
@@ -746,6 +1064,33 @@ class Pyker:
             # Use system Python
             return sys.executable
 
+def _print_help():
+    """Print main help text"""
+    print(f"{Pyker.BOLD}{Pyker.CYAN}Pyker - Simple Python Process Manager{Pyker.RESET}")
+    print(f"\n{Pyker.BOLD}Usage:{Pyker.RESET} pyker <command> [options]")
+    print(f"\n{Pyker.BOLD}Available commands:{Pyker.RESET}")
+    print(f"  {Pyker.GREEN}start{Pyker.RESET}     <name> <script>  - Start a new process [--venv PATH] [--on-boot]")
+    print(f"  {Pyker.GREEN}stop{Pyker.RESET}      <name>          - Stop a process")
+    print(f"  {Pyker.GREEN}restart{Pyker.RESET}   <name>          - Restart a process")
+    print(f"  {Pyker.GREEN}delete{Pyker.RESET}    <name>          - Delete a process")
+    print(f"  {Pyker.GREEN}list{Pyker.RESET}                      - List all processes")
+    print(f"  {Pyker.GREEN}logs{Pyker.RESET}      <name>          - Show process logs")
+    print(f"  {Pyker.GREEN}info{Pyker.RESET}      [name]          - Show process/system information")
+    print(f"  {Pyker.GREEN}enable{Pyker.RESET}    <name>          - Start process automatically on boot")
+    print(f"  {Pyker.GREEN}disable{Pyker.RESET}   <name>          - Disable boot start for a process")
+    print(f"  {Pyker.GREEN}startup{Pyker.RESET}                   - Install OS boot/login hook")
+    print(f"  {Pyker.GREEN}unstartup{Pyker.RESET}                 - Remove OS boot/login hook")
+    print(f"  {Pyker.GREEN}resurrect{Pyker.RESET}                 - Start all on-boot processes")
+    print(f"  {Pyker.GREEN}uninstall{Pyker.RESET}                 - Uninstall Pyker completely")
+    print(f"\n{Pyker.BOLD}Examples:{Pyker.RESET}")
+    print(f"  pyker start bot script.py --on-boot")
+    print(f"  pyker enable bot && pyker startup")
+    print(f"  pyker start webapp app.py --venv ./venv")
+    print(f"  pyker list")
+    print(f"  pyker logs bot -f")
+    print(f"\nUse '{Pyker.CYAN}pyker <command> --help{Pyker.RESET}' for more information on a command.")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Pyker - Simple Python Process Manager',
@@ -760,6 +1105,7 @@ def main():
     start_parser.add_argument('script', help='Python script path')
     start_parser.add_argument('--auto-restart', action='store_true', help='Auto restart on failure')
     start_parser.add_argument('--venv', help='Virtual environment path (e.g., ./venv or /path/to/venv)')
+    start_parser.add_argument('--on-boot', action='store_true', help='Also start this process on boot/login')
     
     # Stop command
     stop_parser = subparsers.add_parser('stop', help='Stop a process')
@@ -786,29 +1132,23 @@ def main():
     info_parser = subparsers.add_parser('info', help='Show process information')
     info_parser.add_argument('name', nargs='?', help='Process name (optional, shows system info if not provided)')
     
+    # Boot autostart commands
+    enable_parser = subparsers.add_parser('enable', help='Enable start on boot for a process')
+    enable_parser.add_argument('name', help='Process name')
+    
+    disable_parser = subparsers.add_parser('disable', help='Disable start on boot for a process')
+    disable_parser.add_argument('name', help='Process name')
+    
+    subparsers.add_parser('startup', help='Install OS hook to resurrect processes on boot/login')
+    subparsers.add_parser('unstartup', help='Remove OS boot/login hook')
+    subparsers.add_parser('resurrect', help='Start all processes marked for boot')
+    
     # Uninstall command
     uninstall_parser = subparsers.add_parser('uninstall', help='Uninstall Pyker completely')
     
     # Handle help manually
     if len(sys.argv) == 1 or (len(sys.argv) == 2 and sys.argv[1] in ['-h', '--help', 'help']):
-        print(f"{Pyker.BOLD}{Pyker.CYAN}Pyker - Simple Python Process Manager{Pyker.RESET}")
-        print(f"\n{Pyker.BOLD}Usage:{Pyker.RESET} pyker <command> [options]")
-        print(f"\n{Pyker.BOLD}Available commands:{Pyker.RESET}")
-        print(f"  {Pyker.GREEN}start{Pyker.RESET}   <name> <script>  - Start a new process [--venv PATH]")
-        print(f"  {Pyker.GREEN}stop{Pyker.RESET}    <name>          - Stop a process")  
-        print(f"  {Pyker.GREEN}restart{Pyker.RESET} <name>          - Restart a process")
-        print(f"  {Pyker.GREEN}delete{Pyker.RESET}  <name>          - Delete a process")
-        print(f"  {Pyker.GREEN}list{Pyker.RESET}                    - List all processes")
-        print(f"  {Pyker.GREEN}logs{Pyker.RESET}    <name>          - Show process logs")
-        print(f"  {Pyker.GREEN}info{Pyker.RESET}    [name]          - Show process/system information")
-        print(f"  {Pyker.GREEN}uninstall{Pyker.RESET}               - Uninstall Pyker completely")
-        print(f"\n{Pyker.BOLD}Examples:{Pyker.RESET}")
-        print(f"  pyker start bot script.py")
-        print(f"  pyker start webapp app.py --venv ./venv")
-        print(f"  pyker list")
-        print(f"  pyker logs bot -f")
-        print(f"  pyker info bot")
-        print(f"\nUse '{Pyker.CYAN}pyker <command> --help{Pyker.RESET}' for more information on a command.")
+        _print_help()
         return
     
     try:
@@ -820,22 +1160,13 @@ def main():
     
     if not args.command:
         print(f"{Pyker.RED}[ERROR]{Pyker.RESET} No command specified")
-        print(f"\n{Pyker.BOLD}Available commands:{Pyker.RESET}")
-        print(f"  {Pyker.GREEN}start{Pyker.RESET}   <name> <script>  - Start a new process")
-        print(f"  {Pyker.GREEN}stop{Pyker.RESET}    <name>          - Stop a process")  
-        print(f"  {Pyker.GREEN}restart{Pyker.RESET} <name>          - Restart a process")
-        print(f"  {Pyker.GREEN}delete{Pyker.RESET}  <name>          - Delete a process")
-        print(f"  {Pyker.GREEN}list{Pyker.RESET}                    - List all processes")
-        print(f"  {Pyker.GREEN}logs{Pyker.RESET}    <name>          - Show process logs")
-        print(f"  {Pyker.GREEN}info{Pyker.RESET}    [name]          - Show process/system information")
-        print(f"  {Pyker.GREEN}uninstall{Pyker.RESET}               - Uninstall Pyker completely")
-        print(f"\nUse '{Pyker.CYAN}pyker <command> --help{Pyker.RESET}' for more information on a command.")
+        _print_help()
         return
     
     pyker = Pyker()
     
     if args.command == 'start':
-        pyker.start(args.name, args.script, args.auto_restart, args.venv)
+        pyker.start(args.name, args.script, args.auto_restart, args.venv, args.on_boot)
     elif args.command == 'stop':
         pyker.stop(args.name)
     elif args.command == 'restart':
@@ -848,6 +1179,16 @@ def main():
         pyker.logs(args.name, args.lines, args.follow)
     elif args.command == 'info':
         pyker.info(args.name)
+    elif args.command == 'enable':
+        pyker.enable(args.name)
+    elif args.command == 'disable':
+        pyker.disable(args.name)
+    elif args.command == 'startup':
+        pyker.startup()
+    elif args.command == 'unstartup':
+        pyker.unstartup()
+    elif args.command == 'resurrect':
+        pyker.resurrect()
     elif args.command == 'uninstall':
         pyker.uninstall()
 

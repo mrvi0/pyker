@@ -47,11 +47,12 @@ _pyker() {
                         *)
                             _arguments \
                                 '--auto-restart[Enable automatic restart on failure]' \
+                                '--on-boot[Start this process on boot/login]' \
                                 '--venv=[Virtual environment path]:directory:_path_files -/'
                             ;;
                     esac
                     ;;
-                stop|restart|delete|info)
+                stop|restart|delete|info|enable|disable)
                     _pyker_processes
                     ;;
                 logs)
@@ -68,7 +69,7 @@ _pyker() {
                             ;;
                     esac
                     ;;
-                list|uninstall)
+                list|uninstall|startup|unstartup|resurrect)
                     # No additional arguments
                     ;;
             esac
@@ -87,6 +88,11 @@ _pyker_commands() {
         'list:List all processes'
         'logs:Show process logs'
         'info:Show process information'
+        'enable:Enable start on boot for a process'
+        'disable:Disable start on boot for a process'
+        'startup:Install OS boot/login hook'
+        'unstartup:Remove OS boot/login hook'
+        'resurrect:Start all on-boot processes'
         'uninstall:Uninstall Pyker completely'
     )
     _describe 'commands' commands
