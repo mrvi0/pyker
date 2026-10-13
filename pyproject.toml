@@ -22,7 +22,7 @@ classifiers = [
     "Topic :: System :: Systems Administration",
 ]
 dependencies = [
-    "psutil>=5.0",
+    "psutil>=7.2.2",
 ]
 
 [project.optional-dependencies]
