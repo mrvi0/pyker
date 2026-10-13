@@ -54,4 +54,5 @@ frontend/yarn-error.log*
 
 # OS
 .DS_Store
-Thumbs.db 
+Thumbs.db
+tmp/
