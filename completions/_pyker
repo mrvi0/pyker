@@ -69,7 +69,7 @@ _pyker() {
                             ;;
                     esac
                     ;;
-                list|uninstall|startup|unstartup|resurrect)
+                list|uninstall|startup|unstartup|resurrect|watch)
                     # No additional arguments
                     ;;
             esac
@@ -93,6 +93,7 @@ _pyker_commands() {
         'startup:Install OS boot/login hook'
         'unstartup:Remove OS boot/login hook'
         'resurrect:Start all on-boot processes'
+        'watch:Run auto-restart watcher in foreground'
         'uninstall:Uninstall Pyker completely'
     )
     _describe 'commands' commands

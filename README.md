@@ -74,16 +74,10 @@ python3 install.py
 ### From Source
 
 ```bash
-# Install psutil dependency
-pip3 install --user psutil
-
-# Copy pyker to local bin
-mkdir -p ~/.local/bin
-cp pyker.py ~/.local/bin/pyker
-chmod +x ~/.local/bin/pyker
-
-# Add to PATH (add this line to ~/.bashrc)
-export PATH="$HOME/.local/bin:$PATH"
+git clone https://github.com/mrvi0/pyker.git
+cd pyker
+pip3 install --user .
+# or: uv tool install .
 ```
 
 ## 🚀 Quick Start
@@ -161,15 +155,32 @@ pyker start analyzer data.py --venv /home/user/miniconda3/envs/myenv
 | `startup` | Install OS boot/login hook | `pyker startup` |
 | `unstartup` | Remove OS boot/login hook | `pyker unstartup` |
 | `resurrect` | Start all on-boot processes | `pyker resurrect` |
+| `watch` | Run auto-restart watcher (foreground) | `pyker watch` |
 | `uninstall` | Uninstall Pyker completely | `pyker uninstall` |
 
 ### Command Options
 
-- `start --auto-restart` - Enable automatic restart on failure
+- `start --auto-restart` - Restart the process automatically if it crashes (background watcher)
 - `start --venv PATH` - Use virtual environment (e.g., `./venv`, `/path/to/venv`)
 - `start --on-boot` - Mark process to start automatically on boot/login
 - `logs -f` - Follow logs in real-time
 - `logs -n 100` - Show last 100 lines
+
+## ♻️ Auto-restart
+
+```bash
+pyker start worker worker.py --auto-restart
+```
+
+Pyker starts a small background watcher that polls managed processes and restarts
+any with `auto_restart` that exited unexpectedly. A deliberate `pyker stop` sets
+`stopped_by_user` so the watcher will **not** bring that process back until you
+start it again.
+
+```bash
+pyker info          # shows watcher status
+pyker watch         # run watcher in the foreground (debug)
+```
 
 ## 🔁 Start on Boot
 

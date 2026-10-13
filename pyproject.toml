@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyker"
-version = "1.1.0"
+version = "1.2.0"
 description = "Simple Python Process Manager — a lightweight PM2-style tool for Python scripts"
 readme = "README.md"
 license = "MIT"
@@ -25,13 +25,20 @@ dependencies = [
     "psutil>=5.0",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
 [project.urls]
 Homepage = "https://github.com/mrvi0/pyker"
 Repository = "https://github.com/mrvi0/pyker"
 Issues = "https://github.com/mrvi0/pyker/issues"
 
 [project.scripts]
-pyker = "pyker:main"
+pyker = "pyker.cli:main"
 
-[tool.setuptools]
-py-modules = ["pyker"]
+[tool.setuptools.packages.find]
+include = ["pyker*"]
+exclude = ["tests*", "scripts*", "tmp*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

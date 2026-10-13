@@ -108,27 +108,33 @@ def setup_local_bin():
     return local_bin
 
 def install_pyker():
-    """Install pyker to ~/.local/bin"""
+    """Install pyker package (pip --user) providing the pyker CLI."""
     print_colored("Installing Pyker...", Colors.YELLOW)
-    
-    # Check if pyker.py exists
-    if not Path("pyker.py").exists():
-        print_colored("Error: pyker.py not found in current directory", Colors.RED)
-        print_colored("Please run this script from the pyker directory", Colors.YELLOW)
-        sys.exit(1)
-    
-    # Setup local bin
     local_bin = setup_local_bin()
-    target_path = local_bin / "pyker"
-    
+
+    if Path("pyproject.toml").exists() and Path("pyker").is_dir():
+        cmd = [sys.executable, "-m", "pip", "install", "--user", "--upgrade", "."]
+        source = "local package"
+    else:
+        cmd = [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--user",
+            "--upgrade",
+            "git+https://github.com/mrvi0/pyker.git",
+        ]
+        source = "GitHub"
+
     try:
-        shutil.copy2("pyker.py", target_path)
-        os.chmod(target_path, 0o755)
-        print_colored(f"✓ pyker installed to {target_path}", Colors.GREEN)
-    except Exception as e:
-        print_colored(f"Error copying file: {e}", Colors.RED)
+        subprocess.run(cmd, check=True)
+        print_colored(f"✓ Pyker installed from {source}", Colors.GREEN)
+    except subprocess.CalledProcessError as e:
+        print_colored(f"Error installing package: {e}", Colors.RED)
+        print_colored("Try: uv tool install git+https://github.com/mrvi0/pyker.git", Colors.YELLOW)
         sys.exit(1)
-    
+
     return local_bin
 
 def check_path(local_bin):

@@ -78,28 +78,24 @@ else
     exit 1
 fi
 
-# Download pyker.py if not present
-if [ ! -f "pyker.py" ]; then
-    echo -e "${YELLOW}Downloading pyker.py...${NC}"
-    if command -v curl &> /dev/null; then
-        curl -sSL https://raw.githubusercontent.com/mrvi0/pyker/main/pyker.py -o pyker.py
-    elif command -v wget &> /dev/null; then
-        wget -q https://raw.githubusercontent.com/mrvi0/pyker/main/pyker.py
-    else
-        echo -e "${RED}Error: Neither curl nor wget is available${NC}"
-        echo -e "${YELLOW}Please download pyker.py manually and run this script again${NC}"
-        exit 1
-    fi
-fi
-
-# Make pyker.py executable
-chmod +x pyker.py
-
-# Create local bin directory if it doesn't exist
+# Install Pyker package (CLI entry point via pip)
+echo -e "${YELLOW}Installing Pyker package...${NC}"
 mkdir -p ~/.local/bin
 
-# Copy pyker to local bin
-cp pyker.py ~/.local/bin/pyker
+if [ -f "pyproject.toml" ] && [ -d "pyker" ]; then
+    if python3 -m pip install --user --upgrade .; then
+        echo -e "${GREEN}✓ Pyker installed from local package${NC}"
+    else
+        echo -e "${RED}Failed to install local package${NC}"
+        exit 1
+    fi
+elif python3 -m pip install --user --upgrade "git+https://github.com/mrvi0/pyker.git"; then
+    echo -e "${GREEN}✓ Pyker installed from GitHub${NC}"
+else
+    echo -e "${RED}Failed to install Pyker via pip${NC}"
+    echo -e "${YELLOW}Try: uv tool install git+https://github.com/mrvi0/pyker.git${NC}"
+    exit 1
+fi
 
 # Check if ~/.local/bin is in PATH
 if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
@@ -136,9 +132,9 @@ if [ ! -f "completions/pyker-completion.bash" ]; then
     echo -e "${YELLOW}Downloading bash completion...${NC}"
     mkdir -p completions
     if command -v curl &> /dev/null; then
-        curl -sSL https://raw.githubusercontent.com/username/pyker/main/completions/pyker-completion.bash -o completions/pyker-completion.bash
+        curl -sSL https://raw.githubusercontent.com/mrvi0/pyker/main/completions/pyker-completion.bash -o completions/pyker-completion.bash
     elif command -v wget &> /dev/null; then
-        wget -q https://raw.githubusercontent.com/username/pyker/main/completions/pyker-completion.bash -O completions/pyker-completion.bash
+        wget -q https://raw.githubusercontent.com/mrvi0/pyker/main/completions/pyker-completion.bash -O completions/pyker-completion.bash
     fi
 fi
 
