@@ -1,5 +1,6 @@
 # Pyker - Simple Python Process Manager
 
+[![CI](https://github.com/mrvi0/pyker/actions/workflows/ci.yml/badge.svg)](https://github.com/mrvi0/pyker/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey.svg)
@@ -384,22 +385,12 @@ venv/bin/pip install psutil
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tests, and PR guidelines.
+
+Please follow the [Code of Conduct](CODE_OF_CONDUCT.md). Security reports: [SECURITY.md](SECURITY.md).
+
+Changelog: [CHANGELOG.md](CHANGELOG.md)
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Built for Python developers who need simple process management
-- Thanks to the Python community for excellent libraries like `psutil`
-- Inspired by the need for lightweight process management tools
-
----
-
-**Made with ❤️ for Python developers** 
+This project is licensed under the MIT License — see [LICENSE](LICENSE). 

@@ -1,0 +1,67 @@
+name: Bug report
+description: Something is broken or unexpected
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please fill in the sections below.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Clear description of the bug.
+      placeholder: When I run `pyker start ...`, it ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps to reproduce the issue.
+      placeholder: |
+        1. Install with ...
+        2. Run `pyker ...`
+        3. See error ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / error output
+      description: Paste relevant terminal output (redact secrets).
+      render: shell
+
+  - type: input
+    id: version
+    attributes:
+      label: Pyker / Python version
+      description: e.g. pyker 1.2.0, Python 3.12, OS
+      placeholder: pyker 1.2.0 · Python 3.12 · Ubuntu 24.04
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install_method
+    attributes:
+      label: How did you install Pyker?
+      options:
+        - uv tool / uvx
+        - install.sh
+        - install.py
+        - pip
+        - from source / other
+    validations:
+      required: true
